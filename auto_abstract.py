@@ -137,16 +137,15 @@ class AbstractGenerator():
             raise ValueError("path not exist")
         for root, dirs, filenames in os.walk(post_dir):
             if self.cfg.debug:
-                filenames = filenames[:5]
-            for filename in filenames[:2]:
+                filenames = filenames[:3]
+            for filename in filenames:
                 # 指定的扩展名结尾
-                if filename.endswith(tuple(self.cfg.extension)):
+                if filename.endswith(tuple(self.cfg.ext)):
                     filepath = os.path.join(root, filename)
                     self.handle_file(filepath) 
 
             
 if __name__=="__main__":
-    cfg = AbstractConfig()
-    cfg.parse_args()
+    cfg = AbstractConfig('config.json')
     generator = AbstractGenerator(cfg)
     generator.generate()

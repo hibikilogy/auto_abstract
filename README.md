@@ -29,7 +29,7 @@ api key获得方式：https://platform.moonshot.cn/console/api-keys
     ```bash
     python auto_abstract.py -h
     ```
-2. 或修改`utils.py`中的配置并直接运行`auto_abstract.py`
+2. 或修改`config.json`中的配置并直接运行`auto_abstract.py`
 
 详情参考参数说明，使用时确认好format为jekyll或zola，建议先以debug运行测试可行性
 

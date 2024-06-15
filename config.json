@@ -1,0 +1,18 @@
+{
+    "format": "jekyll",
+    "post_dir": "../hibikilogy.github.io/_posts",
+    "ext": [".md"],
+    "add": false,
+    "force": false,
+    "maxlength": 300,
+    "debug": false,
+
+    "models": {
+        "moonshot-v1-8k": 8192,
+        "moonshot-v1-32k": 32768
+    },
+    "encoding": "cl100k_base",
+    "api_url": "https://api.moonshot.cn/v1",
+    "temperature": 0.3,
+    "interval": 20  
+}
