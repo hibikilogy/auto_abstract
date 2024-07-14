@@ -1,6 +1,6 @@
 {
-    "format": "jekyll",
-    "post_dir": "../hibikilogy.github.io/_posts",
+    "front": "zola",
+    "post_path": "../v2-dev/content/content",
     "ext": [".md"],
     "add": false,
     "force": false,
@@ -14,5 +14,7 @@
     "encoding": "cl100k_base",
     "api_url": "https://api.moonshot.cn/v1",
     "temperature": 0.3,
-    "interval": 20  
+    "interval": 21,
+    
+    "start": 0
 }

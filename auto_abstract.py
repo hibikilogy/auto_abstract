@@ -1,6 +1,6 @@
 #TODO: 
 
-import os, re
+import os, re, json
 from utils import AbstractConfig, MinInterval
 from openai import OpenAI
 import tiktoken
@@ -13,6 +13,12 @@ class AbstractGenerator():
             base_url = cfg.api_url,
         )
         self.encoder = tiktoken.get_encoding(cfg.encoding)
+    
+    def write_startcode(self, code):
+        with open(self.cfg.config_file, 'rw', encoding='utf-8') as f:
+            data = json.load(f)
+            data['start'] = code
+            json.dump(data, f, ensure_ascii=False, indent=4)
         
     @MinInterval(lambda self: self.cfg.interval)
     def query_ai(self, artical):
@@ -40,9 +46,9 @@ class AbstractGenerator():
     
     def gen_abstract_content(self, artical, origin_tag = None):
         abstract_content = None
-        wrap = self.cfg.formatter.wrapper
-        # origin_tag = re.compile(rf'\n{sep}.*{self.cfg.formatter.commenter} origin\s*?\n.*{sep}\n', re.DOTALL)
-        origin_pattern = re.compile(r'[\s\W](摘要|前言|引言)[\s\W]\s*?(.*?)\n\s*?#', re.DOTALL)
+        wrap = self.cfg.frontter.wrapper
+        # origin_tag = re.compile(rf'\n{sep}.*{self.cfg.frontter.commenter} origin\s*?\n.*{sep}\n', re.DOTALL)
+        origin_pattern = re.compile(r'[\s\W](摘要|前言|引言)[\s\W]\s*?(.*?)\n\s*?[#|==]', re.DOTALL)
         origin_abstract = origin_pattern.search(artical)
         if origin_abstract and not self.cfg.force:
             # 提取匹配到的内容
@@ -67,7 +73,7 @@ class AbstractGenerator():
             raise ValueError("abstract not generated")
             
         replace_content = \
-            f" {tag} \nabstract {self.cfg.formatter.definer} {wrap}{abstract_content}{wrap}"
+            f" {tag} \nabstract {self.cfg.frontter.definer} {wrap}{abstract_content}{wrap}"
         return tag, replace_content
 
     
@@ -87,9 +93,9 @@ class AbstractGenerator():
         if len(artical)==0:
             raise ValueError("read file failed")
         new_artical = None
-        sep = self.cfg.formatter.separator
-        defi = self.cfg.formatter.definer
-        comm = self.cfg.formatter.commenter
+        sep = self.cfg.frontter.separator.replace('+','\+')
+        defi = self.cfg.frontter.definer
+        comm = self.cfg.frontter.commenter
         
         # 
         field_parttern = re.compile(
@@ -105,7 +111,7 @@ class AbstractGenerator():
                      print("已有手动添加的abstract, 跳过")
                 else:
                     new_artical = field_parttern.sub(rf'\1{replace_content}\3', artical)
-                    print(f"已有 'abstract' 并{'强制覆盖' if self.cfg.force else '替换'}为{tag}.")
+                    print(f"已有'abstract'并{'强制覆盖' if self.cfg.force else '处理'}为'{tag}'.")
             elif self.cfg.add:
                 print("已有 'abstract' 并跳过.")
             else:
@@ -116,33 +122,44 @@ class AbstractGenerator():
                             rf'{sep}\n\1\n{comm}{replace_content}\n{sep}', artical, flags=re.DOTALL)
             print(f"已添加 '{tag} abstract' ")
         if new_artical:
+            new_artical = new_artical.replace('\+','+')
             with open(filepath,'w',encoding='utf-8') as file:
                 file.write(new_artical)
-            
+
     
     def generate(self,path = None):
         if path:
             if os.path.isfile(path):
                 return self.handle_file(path)
-            elif os.path.isfile(os.path.join(self.cfg.post_dir, path)):
-                return self.handle_file(os.path.join(self.cfg.post_dir, path))
+            elif os.path.isfile(os.path.join(self.cfg.post_path, path)):
+                return self.handle_file(os.path.join(self.cfg.post_path, path))
             elif os.path.isdir(path):
-                post_dir = path
+                post_path = path
         # 不输入path则处理配置中默认path
-        elif os.path.isfile(self.cfg.post_dir):
-            return self.handle_file(self.cfg.post_dir)
-        elif os.path.isdir(self.cfg.post_dir):
-            post_dir = self.cfg.post_dir
+        elif os.path.isfile(self.cfg.post_path):
+            return self.handle_file(self.cfg.post_path)
+        elif os.path.isdir(self.cfg.post_path):
+            post_path = self.cfg.post_path
         else:
             raise ValueError("path not exist")
-        for root, dirs, filenames in os.walk(post_dir):
+        for i, (root, dirs, filenames) in enumerate(os.walk(post_path)):
             if self.cfg.debug:
-                filenames = filenames[:3]
-            for filename in filenames:
+                filenames = filenames[:10]
+            for j, filename in enumerate(filenames):
+                unicode = (i << 32) | j
+                if unicode < self.cfg.start: continue
+                elif unicode == self.cfg.start:
+                    print(f"Starting at {unicode}")
                 # 指定的扩展名结尾
                 if filename.endswith(tuple(self.cfg.ext)):
                     filepath = os.path.join(root, filename)
-                    self.handle_file(filepath) 
+                    try:
+                        self.handle_file(filepath) 
+                    except:
+                        self.write_startcode(unicode)
+            
+        print("All file handled")
+        self.write_startcode(0)
 
             
 if __name__=="__main__":
